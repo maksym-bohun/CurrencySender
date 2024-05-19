@@ -1,18 +1,11 @@
-const express = require("express");
 const dotenv = require("dotenv");
-const exchangeRateRoutes = require("./routes/exchangeRateRoutes");
 const mongoose = require("mongoose");
-const bodyParser = require("body-parser");
 const cron = require("node-cron");
 const subscriberController = require("./controllers/subscriberController");
 const migrateMongo = require("migrate-mongo");
+const app = require("./app.js");
 
 dotenv.config({ path: "./config.env" });
-
-const app = express();
-const jsonParser = bodyParser.json();
-
-app.use(bodyParser.json({ limit: "20mb" }));
 
 async function runMigrations() {
   const config = require("./migrate-mongo-config.js");
@@ -39,6 +32,8 @@ mongoose
   .connect(process.env.DATABASE, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 30000,
+    socketTimeoutMS: 45000,
   })
   .then(async () => {
     console.log("MongoDB connected");
@@ -51,8 +46,6 @@ mongoose
     console.error("Database connection error:", err);
     process.exit(1);
   });
-
-app.use("/api", jsonParser, exchangeRateRoutes);
 
 cron.schedule("0 16 * * *", () => {
   subscriberController.sendMail();

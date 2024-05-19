@@ -20,8 +20,20 @@ exports.getCurrentExchangeRate = catchAsync(async (req, res, next) => {
 exports.subscribe = catchAsync(async (req, res, next) => {
   const { email } = req.body;
   const subscriber = new Subscriber({ email });
-  await subscriber.save();
-  res.status(200).json({ status: "success" });
+
+  try {
+    await subscriber.save();
+    res.status(200).json({ status: "success" });
+  } catch (err) {
+    console.log("ERROR CODE ", err.code);
+    if (err.code === 11000) {
+      res
+        .status(500)
+        .json({ status: "error", message: "Email is already used" });
+    } else {
+      next(err);
+    }
+  }
 });
 
 exports.sendMail = async (req, res, next) => {
